@@ -7,16 +7,37 @@ module Hn2kindle
 
 		def retrieve_front_page_news
 			url = 'http://api.ihackernews.com/page'
+			puts "start to retrieve"
 			res = RestClient.get url
+			puts "start to parse"
 			hash = decode_json(res)
 			hash['items']
 		end
 
-		def tmp_html(url)
-			filestr = RestClient.get 'http://viewtext.org/article?url=http://sferik.github.com/t/'
+		def make_mobi_book(url, title)
+			puts "start to fetch #{title} from #{url}"
+			begin
+				filestr = RestClient.get url
+			rescue
+				puts "fail fetch"
+				puts "-------------------------------------"
+				return
+			end
+
+			puts "-------------------------------------"
 			File.open('tmp.html', 'w') {|file| file.write(filestr) }
-			Kindlegen.run('txt.html', '-o', 'txt.mobi')
+			titl = "#{title}.mobi".gsub!(/ /, '_')
+			Kindlegen.run('tmp.html', '-o', titl)
 			File.delete('tmp.html')
+			
+		end
+
+		def make_mobi_books
+			items = retrieve_front_page_news
+			items.each do |item|
+				make_mobi_book(item['url'], item['title'])
+			end
+			system('mv *.mobi books/')
 		end
 
 	private
